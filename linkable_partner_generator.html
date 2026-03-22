@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Linkable - 파트너 URL 생성</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    :root {
+      --primary: #2D6A4F;
+      --primary-light: #40916C;
+      --primary-bg: #F0F7F4;
+      --text-dark: #1A1A2E;
+      --text-mid: #4A4A5A;
+      --text-light: #8A8A9A;
+      --bg-white: #FFFFFF;
+      --bg-gray: #F8F9FA;
+      --border: #E2E5E9;
+      --border-focus: #40916C;
+      --teal-dark: #3D7A8A;
+      --teal-bg: #4A8FA0;
+      --error: #DC3545;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+      --radius-sm: 8px;
+      --radius-lg: 16px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { font-size: 16px; }
+
+    body {
+      font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-gray);
+      color: var(--text-dark);
+      line-height: 1.6;
+      min-height: 100vh;
+      min-height: 100dvh;
+      -webkit-font-smoothing: antialiased;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    .logo-header {
+      text-align: center;
+      padding: 24px 0 0;
+    }
+
+    .logo-header svg { height: 32px; }
+
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 16px 16px 40px;
+    }
+
+    .card {
+      background: var(--bg-white);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ============================================
+       입력 영역 (라벨 + 인풋 + 저장 버튼)
+       ============================================ */
+    .input-section { margin-bottom: 32px; }
+
+    .input-section-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 8px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 0;
+    }
+
+    .input-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--teal-bg);
+      color: white;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+      border: 1.5px solid var(--teal-bg);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .input-field {
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 16px; /* iOS에서 줌 방지 */
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-left: none;
+      border-right: none;
+      outline: none;
+      color: var(--text-dark);
+      transition: border-color 0.2s, box-shadow 0.2s;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .input-field::placeholder { color: var(--text-light); }
+
+    .input-field:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.1);
+      z-index: 1;
+      position: relative;
+    }
+
+    .save-btn {
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      padding: 12px 20px;
+      background: var(--primary);
+      color: white;
+      border: 1.5px solid var(--primary);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+      flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .save-btn:hover { background: var(--primary-light); border-color: var(--primary-light); }
+    .save-btn:active { transform: scale(0.97); }
+
+    .save-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* ============================================
+       URL 결과
+       ============================================ */
+    .url-section-label {
+      background: var(--teal-bg);
+      color: white;
+      font-size: 15px;
+      font-weight: 600;
+      text-align: center;
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 10px;
+    }
+
+    .url-output-box {
+      display: flex;
+      align-items: center;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      background: var(--bg-white);
+      min-height: 48px;
+    }
+
+    .url-text {
+      flex: 1;
+      padding: 12px 14px;
+      font-size: 13px;
+      color: var(--teal-dark);
+      word-break: break-all;
+      line-height: 1.5;
+    }
+    .url-text.placeholder { color: var(--text-light); font-style: italic; }
+
+    .copy-btn {
+      flex-shrink: 0;
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 12px 16px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .copy-btn:hover { background: var(--primary-light); }
+    .copy-btn.visible { display: block; }
+    .copy-btn.copied { background: #555; }
+
+    /* 저장 상태 */
+    .save-status {
+      margin-top: 8px;
+      font-size: 12px;
+      text-align: center;
+      min-height: 18px;
+    }
+    .save-status.saving { color: var(--text-light); }
+    .save-status.saved { color: var(--primary); }
+    .save-status.error { color: var(--error); }
+
+    .save-dot {
+      display: inline-block;
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+    .saving .save-dot { background: var(--text-light); animation: pulse 1s infinite; }
+    .saved .save-dot { background: var(--primary); }
+    .error .save-dot { background: var(--error); }
+
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.3} }
+
+    /* ============================================
+       QR 코드 영역
+       ============================================ */
+    .qr-section {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 2px solid var(--bg-gray);
+      display: none;
+    }
+    .qr-section.show { display: block; }
+
+    .qr-section-label {
+      background: var(--primary);
+      color: white;
+      font-size: 15px;
+      font-weight: 600;
+      text-align: center;
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 14px;
+    }
+
+    .qr-card {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 20px;
+      background: var(--bg-gray);
+      border-radius: var(--radius-sm);
+    }
+
+    .qr-image-wrap {
+      flex-shrink: 0;
+      background: white;
+      padding: 10px;
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-sm);
+      line-height: 0;
+    }
+
+    .qr-image-wrap canvas, .qr-image-wrap img { display: block; }
+
+    .qr-details { flex: 1; min-width: 0; }
+
+    .qr-partner-name {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 4px;
+    }
+
+    .qr-pid {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--primary);
+      background: var(--primary-bg);
+      padding: 2px 10px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+
+    .qr-url-preview {
+      font-size: 11px;
+      color: var(--text-light);
+      word-break: break-all;
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+
+    .qr-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .qr-btn {
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .qr-btn svg { width: 14px; height: 14px; }
+
+    .qr-btn-download { background: var(--primary); color: white; }
+    .qr-btn-download:hover { background: var(--primary-light); }
+
+    .qr-btn-copy { background: var(--teal-bg); color: white; }
+    .qr-btn-copy:hover { background: var(--teal-dark); }
+
+    /* ============================================
+       히스토리
+       ============================================ */
+    .history-section {
+      margin-top: 24px;
+      border-top: 2px solid var(--bg-gray);
+      padding-top: 20px;
+    }
+
+    .history-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .history-clear {
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-light);
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .history-list { list-style: none; }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      background: var(--bg-gray);
+      font-size: 13px;
+      gap: 10px;
+    }
+
+    .history-qr-thumb {
+      width: 44px;
+      height: 44px;
+      background: white;
+      border-radius: 4px;
+      padding: 3px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+      cursor: pointer;
+      transition: transform 0.15s;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .history-qr-thumb:hover { transform: scale(1.08); }
+    .history-qr-thumb canvas, .history-qr-thumb img { width:100%!important; height:100%!important; display:block; }
+
+    .history-meta {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .history-meta-top {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .history-pid {
+      font-weight: 700;
+      color: var(--primary);
+      font-size: 11px;
+      background: var(--primary-bg);
+      padding: 1px 7px;
+      border-radius: 4px;
+    }
+
+    .history-name {
+      font-weight: 600;
+      color: var(--text-dark);
+      font-size: 13px;
+    }
+
+    .history-saved-badge {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-weight: 600;
+    }
+    .history-saved-badge.synced { background: #E8F5E9; color: #2E7D32; }
+    .history-saved-badge.local { background: #FFF3E0; color: #E65100; }
+
+    .history-url {
+      color: var(--teal-dark);
+      font-size: 11px;
+      word-break: break-all;
+      line-height: 1.3;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    .history-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .history-btn {
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 6px 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .history-btn-url { background: var(--teal-bg); color: white; }
+    .history-btn-url:hover { background: var(--teal-dark); }
+    .history-btn-qr { background: var(--primary); color: white; }
+    .history-btn-qr:hover { background: var(--primary-light); }
+
+    .empty-history {
+      text-align: center;
+      color: var(--text-light);
+      font-size: 13px;
+      padding: 16px 0;
+    }
+
+    /* ============================================
+       QR 확대 모달
+       ============================================ */
+    .qr-modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .qr-modal-overlay.show { display: flex; }
+
+    .qr-modal {
+      background: white;
+      border-radius: var(--radius-lg);
+      padding: 28px 24px;
+      text-align: center;
+      max-width: 340px;
+      width: 100%;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      animation: slideUp 0.25s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(16px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .qr-modal-name { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+    .qr-modal-pid { font-size: 12px; color: var(--primary); font-weight: 600; margin-bottom: 14px; }
+
+    .qr-modal-image {
+      display: inline-block;
+      background: white;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      margin-bottom: 14px;
+    }
+
+    .qr-modal-url {
+      font-size: 11px;
+      color: var(--text-light);
+      word-break: break-all;
+      margin-bottom: 16px;
+      line-height: 1.4;
+    }
+
+    .qr-modal-actions { display: flex; gap: 8px; justify-content: center; }
+
+    .qr-modal-close {
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 14px; font-weight: 600;
+      padding: 10px 20px;
+      background: var(--bg-gray); color: var(--text-mid);
+      border: 1px solid var(--border);
+      border-radius: 6px; cursor: pointer;
+    }
+
+    .qr-modal-download {
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 14px; font-weight: 600;
+      padding: 10px 20px;
+      background: var(--primary); color: white;
+      border: none; border-radius: 6px; cursor: pointer;
+    }
+    .qr-modal-download:hover { background: var(--primary-light); }
+
+    /* ============================================
+       반응형 - 태블릿
+       ============================================ */
+    @media (min-width: 601px) {
+      .container { padding: 20px 20px 40px; }
+      .card { padding: 32px; }
+      .logo-header { padding: 32px 0 0; }
+      .logo-header svg { height: 36px; }
+    }
+
+    /* ============================================
+       반응형 - 모바일 (600px 이하)
+       ============================================ */
+    @media (max-width: 600px) {
+      .container { padding: 12px 12px 32px; }
+      .card { padding: 18px; border-radius: 12px; }
+
+      /* 입력: 세로 스택 */
+      .input-row {
+        flex-direction: column;
+        gap: 0;
+      }
+
+      .input-label {
+        border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+        padding: 10px 16px;
+        font-size: 14px;
+      }
+
+      .input-bottom-row {
+        display: flex;
+        gap: 0;
+      }
+
+      .input-field {
+        border-left: 1.5px solid var(--border);
+        border-radius: 0 0 0 var(--radius-sm);
+        padding: 12px 12px;
+      }
+
+      .save-btn {
+        border-radius: 0 0 var(--radius-sm) 0;
+        padding: 12px 16px;
+        font-size: 14px;
+      }
+
+      /* QR 카드 세로 */
+      .qr-card {
+        flex-direction: column;
+        text-align: center;
+        padding: 16px;
+        gap: 14px;
+      }
+
+      .qr-actions { justify-content: center; }
+
+      .qr-partner-name { font-size: 16px; }
+
+      /* 히스토리 */
+      .history-item {
+        padding: 10px;
+        gap: 8px;
+      }
+
+      .history-qr-thumb {
+        width: 40px;
+        height: 40px;
+      }
+
+      .history-actions {
+        flex-direction: row;
+        gap: 4px;
+      }
+
+      .history-btn {
+        font-size: 10px;
+        padding: 5px 8px;
+      }
+
+      /* 모달 */
+      .qr-modal { padding: 24px 20px; }
+    }
+
+    /* ============================================
+       반응형 - 아주 작은 화면 (360px 이하)
+       ============================================ */
+    @media (max-width: 360px) {
+      .card { padding: 14px; }
+      .input-label { font-size: 13px; padding: 8px 12px; }
+      .save-btn { font-size: 13px; padding: 10px 14px; }
+      .url-text { font-size: 12px; padding: 10px 12px; }
+      .qr-partner-name { font-size: 15px; }
+      .history-qr-thumb { width: 36px; height: 36px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 로고 -->
+  <div class="logo-header">
+    <svg viewBox="0 0 160 40" xmlns="http://www.w3.org/2000/svg">
+      <path d="M30 8 C35 2, 45 2, 50 8" stroke="#1A1A2E" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <text x="16" y="32" font-family="'Noto Sans KR', sans-serif" font-size="24" font-weight="700" fill="#1A1A2E">Linkable</text>
+    </svg>
+  </div>
+
+  <div class="container">
+    <div class="card">
+
+      <!-- 파트너 이름 입력 -->
+      <div class="input-section">
+        <!-- 데스크톱: 가로 한줄 / 모바일: 라벨 위, 인풋+버튼 아래 -->
+        <div class="input-row" id="inputRow">
+          <div class="input-label">파트너 이름</div>
+          <input type="text" id="partnerInput" class="input-field" placeholder="파트너 이름을 입력하세요" maxlength="30" autofocus>
+          <button class="save-btn" id="saveBtn" onclick="submitPartner()">저장</button>
+        </div>
+      </div>
+
+      <!-- 생성된 URL -->
+      <div class="url-section-label">고객 제공 URL</div>
+      <div class="url-output-box">
+        <div class="url-text placeholder" id="urlOutput">파트너 이름을 입력하면 URL이 자동 생성됩니다</div>
+        <button class="copy-btn" id="copyBtn" onclick="copyURL()">복사</button>
+      </div>
+      <div class="save-status" id="saveStatus"></div>
+
+      <!-- QR 코드 표시 -->
+      <div class="qr-section" id="qrSection">
+        <div class="qr-section-label">QR 코드</div>
+        <div class="qr-card">
+          <div class="qr-image-wrap" id="qrImageWrap"></div>
+          <div class="qr-details">
+            <div class="qr-partner-name" id="qrPartnerName"></div>
+            <div class="qr-pid" id="qrPid"></div>
+            <div class="qr-url-preview" id="qrUrlPreview"></div>
+            <div class="qr-actions">
+              <button class="qr-btn qr-btn-download" onclick="downloadCurrentQR()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                이미지 저장
+              </button>
+              <button class="qr-btn qr-btn-copy" onclick="copyURL()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                URL 복사
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 히스토리 -->
+      <div class="history-section">
+        <div class="history-title">
+          <span>생성 히스토리</span>
+          <button class="history-clear" onclick="clearHistory()">로컬 삭제</button>
+        </div>
+        <ul class="history-list" id="historyList">
+          <li class="empty-history">아직 생성된 URL이 없습니다</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- QR 확대 모달 -->
+  <div class="qr-modal-overlay" id="qrModalOverlay" onclick="closeQrModal(event)">
+    <div class="qr-modal" onclick="event.stopPropagation()">
+      <div class="qr-modal-name" id="modalName"></div>
+      <div class="qr-modal-pid" id="modalPid"></div>
+      <div class="qr-modal-image" id="modalQrImage"></div>
+      <div class="qr-modal-url" id="modalUrl"></div>
+      <div class="qr-modal-actions">
+        <button class="qr-modal-close" onclick="closeQrModal()">닫기</button>
+        <button class="qr-modal-download" id="modalDownloadBtn">이미지 저장</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // ★★★ 설정 ★★★
+    // ============================================
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxTxOojQnjK1wbaqAbHl_hGB1_08PiQroJ-fnvPQna0O2lbHR3EY-vLlGamrxZ3qUm_/exec';
+    const BASE_URL = 'https://linkcorp-kr.github.io/booking.html';
+
+    let currentQR = { name: '', pid: '', url: '', dataUrl: '' };
+
+    // ============================================
+    // 모바일 레이아웃 조정
+    // ============================================
+    function adjustLayout() {
+      const row = document.getElementById('inputRow');
+      const input = document.getElementById('partnerInput');
+      const saveBtn = document.getElementById('saveBtn');
+
+      if (window.innerWidth <= 600) {
+        // 모바일: input과 button을 wrapper로 감싸기
+        if (!document.getElementById('inputBottomRow')) {
+          const wrapper = document.createElement('div');
+          wrapper.id = 'inputBottomRow';
+          wrapper.className = 'input-bottom-row';
+          row.appendChild(wrapper);
+          wrapper.appendChild(input);
+          wrapper.appendChild(saveBtn);
+        }
+      } else {
+        // 데스크톱: wrapper 해제
+        const wrapper = document.getElementById('inputBottomRow');
+        if (wrapper) {
+          row.appendChild(input);
+          row.appendChild(saveBtn);
+          wrapper.remove();
+        }
+      }
+    }
+
+    adjustLayout();
+    window.addEventListener('resize', adjustLayout);
+
+    // ============================================
+    // PID 카운터
+    // ============================================
+    function getNextPid() {
+      let c = parseInt(localStorage.getItem('linkable_pid_counter') || '0', 10);
+      c += 1;
+      localStorage.setItem('linkable_pid_counter', c.toString());
+      return 'P' + String(c).padStart(3, '0');
+    }
+
+    function getCurrentPidPreview() {
+      let c = parseInt(localStorage.getItem('linkable_pid_counter') || '0', 10);
+      return 'P' + String(c + 1).padStart(3, '0');
+    }
+
+    // ============================================
+    // QR 코드 생성
+    // ============================================
+    function generateQR(container, url, size) {
+      container.innerHTML = '';
+      new QRCode(container, {
+        text: url,
+        width: size || 160,
+        height: size || 160,
+        colorDark: '#1A1A2E',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }
+
+    function showMainQR(name, pid, url) {
+      const section = document.getElementById('qrSection');
+      const wrap = document.getElementById('qrImageWrap');
+      const qrSize = window.innerWidth <= 600 ? 140 : 160;
+
+      generateQR(wrap, url, qrSize);
+      document.getElementById('qrPartnerName').textContent = name + ' 파트너';
+      document.getElementById('qrPid').textContent = pid;
+      document.getElementById('qrUrlPreview').textContent = url;
+      section.classList.add('show');
+
+      setTimeout(() => {
+        const canvas = wrap.querySelector('canvas');
+        if (canvas) currentQR = { name, pid, url, dataUrl: canvas.toDataURL('image/png') };
+      }, 100);
+    }
+
+    function downloadCurrentQR() {
+      if (!currentQR.dataUrl) return;
+      downloadQRImage(currentQR.dataUrl, currentQR.name, currentQR.pid);
+    }
+
+    function downloadQRImage(dataUrl, name, pid) {
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = `Linkable_QR_${name}_${pid}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    // ============================================
+    // QR 모달
+    // ============================================
+    function openQrModal(name, pid, url) {
+      document.getElementById('modalName').textContent = name + ' 파트너';
+      document.getElementById('modalPid').textContent = pid;
+      document.getElementById('modalUrl').textContent = url;
+
+      const imgWrap = document.getElementById('modalQrImage');
+      generateQR(imgWrap, url, 200);
+
+      document.getElementById('modalDownloadBtn').onclick = function() {
+        setTimeout(() => {
+          const canvas = imgWrap.querySelector('canvas');
+          if (canvas) downloadQRImage(canvas.toDataURL('image/png'), name, pid);
+        }, 50);
+      };
+
+      document.getElementById('qrModalOverlay').classList.add('show');
+    }
+
+    function closeQrModal(e) {
+      if (e && e.target !== document.getElementById('qrModalOverlay') && e.type === 'click') return;
+      document.getElementById('qrModalOverlay').classList.remove('show');
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') document.getElementById('qrModalOverlay').classList.remove('show');
+    });
+
+    // ============================================
+    // 히스토리
+    // ============================================
+    function getHistory() {
+      try { return JSON.parse(localStorage.getItem('linkable_url_history') || '[]'); } catch { return []; }
+    }
+
+    function addToHistory(name, pid, url, synced) {
+      const h = getHistory();
+      h.unshift({ name, pid, url, synced: !!synced, date: new Date().toLocaleString('ko-KR') });
+      if (h.length > 50) h.length = 50;
+      localStorage.setItem('linkable_url_history', JSON.stringify(h));
+      renderHistory();
+    }
+
+    function markSynced(pid) {
+      const h = getHistory();
+      const item = h.find(x => x.pid === pid);
+      if (item) { item.synced = true; localStorage.setItem('linkable_url_history', JSON.stringify(h)); renderHistory(); }
+    }
+
+    function clearHistory() {
+      if (!confirm('로컬 히스토리를 삭제하시겠습니까?\n(Google Sheets 데이터는 유지됩니다)')) return;
+      localStorage.removeItem('linkable_url_history');
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const list = document.getElementById('historyList');
+      const history = getHistory();
+
+      if (history.length === 0) {
+        list.innerHTML = '<li class="empty-history">아직 생성된 URL이 없습니다</li>';
+        return;
+      }
+
+      list.innerHTML = history.map((item, i) => {
+        const safeUrl = item.url.replace(/'/g, "\\'");
+        const safeName = item.name.replace(/'/g, "\\'");
+        return `
+          <li class="history-item">
+            <div class="history-qr-thumb" id="hqr_${i}" onclick="openQrModal('${safeName}','${item.pid}','${safeUrl}')" title="QR 확대"></div>
+            <div class="history-meta">
+              <div class="history-meta-top">
+                <span class="history-pid">${esc(item.pid)}</span>
+                <span class="history-name">${esc(item.name)}</span>
+                <span class="history-saved-badge ${item.synced ? 'synced' : 'local'}">${item.synced ? 'Sheets' : '로컬'}</span>
+              </div>
+              <div class="history-url" title="${esc(item.url)}">${esc(item.url)}</div>
+            </div>
+            <div class="history-actions">
+              <button class="history-btn history-btn-url" onclick="copyText('${safeUrl}', this)">URL</button>
+              <button class="history-btn history-btn-qr" onclick="downloadHistoryQR('${safeName}','${item.pid}','${safeUrl}')">QR</button>
+            </div>
+          </li>`;
+      }).join('');
+
+      history.forEach((item, i) => {
+        const thumb = document.getElementById('hqr_' + i);
+        if (thumb) generateQR(thumb, item.url, 38);
+      });
+    }
+
+    function downloadHistoryQR(name, pid, url) {
+      const temp = document.createElement('div');
+      temp.style.cssText = 'position:fixed;left:-9999px';
+      document.body.appendChild(temp);
+      generateQR(temp, url, 300);
+      setTimeout(() => {
+        const canvas = temp.querySelector('canvas');
+        if (canvas) downloadQRImage(canvas.toDataURL('image/png'), name, pid);
+        document.body.removeChild(temp);
+      }, 150);
+    }
+
+    // ============================================
+    // Google Sheets 저장
+    // ============================================
+    async function saveToSheets(partnerName, pid, url) {
+      if (APPS_SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbxTxOojQnjK1wbaqAbHl_hGB1_08PiQroJ-fnvPQna0O2lbHR3EY-vLlGamrxZ3qUm_/exec') {
+        console.log('=== Sheets 저장 데모 ===', { partnerName, pid, url });
+        setSaveStatus('saved', 'Google Sheets 저장 완료 (데모)');
+        markSynced(pid);
+        return;
+      }
+
+      setSaveStatus('saving', 'Google Sheets에 저장 중...');
+      try {
+        await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'partner', partnerName, pid, baseUrl: BASE_URL })
+        });
+        setSaveStatus('saved', 'Google Sheets에 저장 완료');
+        markSynced(pid);
+      } catch (err) {
+        console.error('Sheets 저장 실패:', err);
+        setSaveStatus('error', '저장 실패 - 다시 시도해 주세요');
+      }
+    }
+
+    function setSaveStatus(type, msg) {
+      const el = document.getElementById('saveStatus');
+      el.className = 'save-status ' + type;
+      el.innerHTML = `<span class="save-dot"></span>${msg}`;
+      if (type === 'saved') setTimeout(() => { el.innerHTML = ''; el.className = 'save-status'; }, 3000);
+    }
+
+    // ============================================
+    // 메인 로직: 저장 버튼 & Enter
+    // ============================================
+    const partnerInput = document.getElementById('partnerInput');
+    const urlOutput = document.getElementById('urlOutput');
+    const copyBtn = document.getElementById('copyBtn');
+
+    function submitPartner() {
+      const name = partnerInput.value.trim();
+      if (!name) {
+        partnerInput.focus();
+        return;
+      }
+
+      const pid = getNextPid();
+      const finalURL = `${BASE_URL}?partner=${encodeURIComponent(name)}&pid=${pid}`;
+
+      urlOutput.textContent = finalURL;
+      urlOutput.classList.remove('placeholder');
+      copyBtn.classList.add('visible');
+
+      showMainQR(name, pid, finalURL);
+      addToHistory(name, pid, finalURL, false);
+      saveToSheets(name, pid, finalURL);
+
+      partnerInput.value = '';
+      partnerInput.focus();
+    }
+
+    // 실시간 미리보기
+    partnerInput.addEventListener('input', function() {
+      const name = this.value.trim();
+      if (!name) {
+        urlOutput.textContent = '파트너 이름을 입력하면 URL이 자동 생성됩니다';
+        urlOutput.classList.add('placeholder');
+        copyBtn.classList.remove('visible');
+        return;
+      }
+      const previewPid = getCurrentPidPreview();
+      urlOutput.textContent = `${BASE_URL}?partner=${encodeURIComponent(name)}&pid=${previewPid}`;
+      urlOutput.classList.remove('placeholder');
+      copyBtn.classList.add('visible');
+      copyBtn.textContent = '복사';
+      copyBtn.classList.remove('copied');
+    });
+
+    // Enter = 저장
+    partnerInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        submitPartner();
+      }
+    });
+
+    // ============================================
+    // 복사
+    // ============================================
+    function copyURL() {
+      const text = urlOutput.textContent;
+      if (!text || urlOutput.classList.contains('placeholder')) return;
+      copyToClipboard(text);
+      copyBtn.textContent = '복사됨!';
+      copyBtn.classList.add('copied');
+      setTimeout(() => { copyBtn.textContent = '복사'; copyBtn.classList.remove('copied'); }, 2000);
+    }
+
+    function copyText(text, btn) {
+      copyToClipboard(text);
+      const o = btn.textContent;
+      btn.textContent = '완료';
+      setTimeout(() => { btn.textContent = o; }, 1500);
+    }
+
+    function copyToClipboard(text) {
+      if (navigator.clipboard) { navigator.clipboard.writeText(text); }
+      else {
+        const t = document.createElement('textarea');
+        t.value = text; t.style.cssText = 'position:fixed;opacity:0';
+        document.body.appendChild(t); t.select(); document.execCommand('copy');
+        document.body.removeChild(t);
+      }
+    }
+
+    function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+    // 초기 렌더
+    renderHistory();
+  </script>
+</body>
+</html>
