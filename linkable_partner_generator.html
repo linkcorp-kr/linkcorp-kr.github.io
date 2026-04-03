@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Linkable - 파트너 URL 생성</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    :root {
+      --primary: #2D6A4F; --primary-light: #40916C; --primary-bg: #F0F7F4;
+      --text-dark: #1A1A2E; --text-mid: #4A4A5A; --text-light: #8A8A9A;
+      --bg-white: #FFFFFF; --bg-gray: #F8F9FA; --border: #E2E5E9;
+      --border-focus: #40916C; --teal-dark: #3D7A8A; --teal-bg: #4A8FA0;
+      --error: #DC3545; --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.08); --radius-sm: 8px; --radius-lg: 16px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html { font-size:16px; }
+    body {
+      font-family:'Noto Sans KR',-apple-system,sans-serif;
+      background:var(--bg-gray); color:var(--text-dark);
+      line-height:1.6; min-height:100vh;
+      -webkit-font-smoothing:antialiased; -webkit-text-size-adjust:100%;
+    }
+
+    /* 로그인 */
+    .login-screen {
+      position:fixed; top:0;left:0;right:0;bottom:0;
+      background:linear-gradient(135deg,#2D6A4F 0%,#1B4332 100%);
+      z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px;
+    }
+    .login-screen.hidden { display:none; }
+    .login-card {
+      background:white; border-radius:20px; padding:40px 36px;
+      max-width:380px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,0.3); text-align:center;
+    }
+    .login-logo { font-size:28px; font-weight:800; color:var(--text-dark); margin-bottom:4px; }
+    .login-sub { font-size:13px; color:var(--text-light); margin-bottom:28px; }
+    .login-input-group { margin-bottom:14px; text-align:left; }
+    .login-input-label { font-size:12px; font-weight:600; color:var(--text-mid); margin-bottom:6px; display:block; }
+    .login-input {
+      font-family:'Noto Sans KR',sans-serif; width:100%; font-size:16px;
+      padding:12px 14px; border:1.5px solid var(--border); border-radius:8px; outline:none;
+    }
+    .login-input:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(45,106,79,0.1); }
+    .login-input.error { border-color:var(--error); }
+    .login-btn {
+      font-family:'Noto Sans KR',sans-serif; width:100%; font-size:16px; font-weight:700;
+      padding:14px; background:var(--primary); color:white; border:none; border-radius:8px;
+      cursor:pointer; margin-top:8px;
+    }
+    .login-btn:hover { background:var(--primary-light); }
+    .login-btn:active { transform:scale(0.98); }
+    .login-error { font-size:13px; color:var(--error); margin-top:10px; min-height:20px; }
+
+    /* 로고 */
+    .logo-header { text-align:center; padding:24px 0 0; }
+    .logo-header .logo-text { font-size:28px; font-weight:700; color:var(--text-dark); }
+    .logo-header .logo-arc { display:block; width:48px; height:16px; margin:0 auto 2px; }
+
+    .container { max-width:680px; margin:0 auto; padding:16px 16px 40px; }
+    .card { background:var(--bg-white); border-radius:var(--radius-lg); padding:24px; box-shadow:var(--shadow-sm); }
+
+    /* 입력 */
+    .input-section { margin-bottom:32px; }
+    .input-row { display:flex; gap:0; }
+    .input-label {
+      display:flex; align-items:center; justify-content:center;
+      background:var(--teal-bg); color:white; font-size:15px; font-weight:600;
+      padding:12px 16px; border-radius:var(--radius-sm) 0 0 var(--radius-sm);
+      border:1.5px solid var(--teal-bg); white-space:nowrap; flex-shrink:0;
+    }
+    .input-field {
+      font-family:'Noto Sans KR',sans-serif; font-size:16px; padding:12px 14px;
+      border:1.5px solid var(--border); border-left:none; border-right:none;
+      outline:none; color:var(--text-dark); flex:1; min-width:0;
+    }
+    .input-field::placeholder { color:var(--text-light); }
+    .input-field:focus { border-color:var(--border-focus); box-shadow:0 0 0 3px rgba(45,106,79,0.1); z-index:1; position:relative; }
+    .save-btn {
+      font-family:'Noto Sans KR',sans-serif; font-size:15px; font-weight:700;
+      padding:12px 20px; background:var(--primary); color:white;
+      border:1.5px solid var(--primary); border-radius:0 var(--radius-sm) var(--radius-sm) 0;
+      cursor:pointer; white-space:nowrap; flex-shrink:0;
+    }
+    .save-btn:hover { background:var(--primary-light); border-color:var(--primary-light); }
+    .save-btn:active { transform:scale(0.97); }
+    .save-btn:disabled { opacity:0.5; cursor:not-allowed; }
+
+    /* URL */
+    .url-section-label {
+      background:var(--teal-bg); color:white; font-size:15px; font-weight:600;
+      text-align:center; padding:10px 16px; border-radius:var(--radius-sm); margin-bottom:10px;
+    }
+    .url-output-box {
+      display:flex; align-items:center; border:1.5px solid var(--border);
+      border-radius:var(--radius-sm); overflow:hidden; min-height:48px;
+    }
+    .url-text { flex:1; padding:12px 14px; font-size:13px; color:var(--teal-dark); word-break:break-all; line-height:1.5; }
+    .url-text.placeholder { color:var(--text-light); font-style:italic; }
+    .copy-btn {
+      flex-shrink:0; font-family:'Noto Sans KR',sans-serif; font-size:13px; font-weight:600;
+      padding:12px 16px; background:var(--primary); color:white; border:none; cursor:pointer; display:none;
+    }
+    .copy-btn:hover { background:var(--primary-light); }
+    .copy-btn.visible { display:block; }
+    .copy-btn.copied { background:#555; }
+
+    .save-status { margin-top:8px; font-size:12px; text-align:center; min-height:18px; }
+    .save-status.saving { color:var(--text-light); }
+    .save-status.saved { color:var(--primary); }
+    .save-status.error { color:var(--error); }
+    .save-dot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:5px; vertical-align:middle; }
+    .saving .save-dot { background:var(--text-light); animation:pulse 1s infinite; }
+    .saved .save-dot { background:var(--primary); }
+    .error .save-dot { background:var(--error); }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.3} }
+
+    /* QR */
+    .qr-section { margin-top:24px; padding-top:20px; border-top:2px solid var(--bg-gray); display:none; }
+    .qr-section.show { display:block; }
+    .qr-section-label { background:var(--primary); color:white; font-size:15px; font-weight:600; text-align:center; padding:10px 16px; border-radius:var(--radius-sm); margin-bottom:14px; }
+    .qr-card { display:flex; align-items:center; gap:20px; padding:20px; background:var(--bg-gray); border-radius:var(--radius-sm); }
+    .qr-image-wrap { flex-shrink:0; background:white; padding:10px; border-radius:var(--radius-sm); box-shadow:var(--shadow-sm); line-height:0; }
+    .qr-image-wrap canvas,.qr-image-wrap img { display:block; }
+    .qr-details { flex:1; min-width:0; }
+    .qr-partner-name { font-size:17px; font-weight:700; margin-bottom:4px; }
+    .qr-pid { display:inline-block; font-size:11px; font-weight:700; color:var(--primary); background:var(--primary-bg); padding:2px 10px; border-radius:4px; margin-bottom:10px; }
+    .qr-url-preview { font-size:11px; color:var(--text-light); word-break:break-all; margin-bottom:12px; }
+    .qr-actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .qr-btn { font-family:'Noto Sans KR',sans-serif; font-size:12px; font-weight:600; padding:8px 14px; border:none; border-radius:6px; cursor:pointer; display:inline-flex; align-items:center; gap:5px; }
+    .qr-btn svg { width:14px; height:14px; }
+    .qr-btn-download { background:var(--primary); color:white; }
+    .qr-btn-download:hover { background:var(--primary-light); }
+    .qr-btn-copy { background:var(--teal-bg); color:white; }
+    .qr-btn-copy:hover { background:var(--teal-dark); }
+
+    /* 히스토리 */
+    .history-section { margin-top:24px; border-top:2px solid var(--bg-gray); padding-top:20px; }
+    .history-title { font-size:14px; font-weight:700; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; }
+    .history-reload {
+      font-family:'Noto Sans KR',sans-serif; font-size:12px; font-weight:600; color:var(--primary);
+      background:var(--primary-bg); border:1px solid #B7E4C7; padding:4px 12px; border-radius:4px; cursor:pointer;
+    }
+    .history-reload:hover { background:#D8F3DC; }
+
+    .history-list { list-style:none; }
+    .history-item {
+      display:flex; align-items:center; padding:10px 12px; border-radius:8px;
+      margin-bottom:8px; background:var(--bg-gray); font-size:13px; gap:10px;
+    }
+    .history-qr-thumb {
+      width:44px; height:44px; background:white; border-radius:4px; padding:3px;
+      box-shadow:0 1px 2px rgba(0,0,0,0.08); cursor:pointer; overflow:hidden; flex-shrink:0;
+    }
+    .history-qr-thumb:hover { transform:scale(1.08); }
+    .history-qr-thumb canvas,.history-qr-thumb img { width:100%!important; height:100%!important; display:block; }
+
+    .history-meta { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+    .history-meta-top { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .history-pid { font-weight:700; color:var(--primary); font-size:11px; background:var(--primary-bg); padding:1px 7px; border-radius:4px; }
+    .history-name { font-weight:600; font-size:13px; }
+    .history-status { font-size:10px; padding:1px 6px; border-radius:3px; font-weight:600; }
+    .history-status.active { background:#E8F5E9; color:#2E7D32; }
+    .history-status.inactive { background:#FFF3E0; color:#E65100; }
+    .history-date { font-size:10px; color:var(--text-light); }
+    .history-url {
+      color:var(--teal-dark); font-size:11px; word-break:break-all; line-height:1.3;
+      overflow:hidden; text-overflow:ellipsis; display:-webkit-box;
+      -webkit-line-clamp:2; -webkit-box-orient:vertical; text-decoration:none; cursor:pointer;
+    }
+    .history-url:hover { text-decoration:underline; color:var(--primary); }
+
+    .history-actions { display:flex; flex-direction:column; gap:4px; flex-shrink:0; }
+    .history-btn {
+      font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:600;
+      padding:6px 10px; border:none; border-radius:4px; cursor:pointer; white-space:nowrap;
+    }
+    .history-btn-url { background:var(--teal-bg); color:white; }
+    .history-btn-url:hover { background:var(--teal-dark); }
+    .history-btn-qr { background:var(--primary); color:white; }
+    .history-btn-qr:hover { background:var(--primary-light); }
+    .history-btn-del { background:#E74C3C; color:white; }
+    .history-btn-del:hover { background:#C0392B; }
+
+    .empty-history { text-align:center; color:var(--text-light); font-size:13px; padding:16px 0; }
+    .loading-history { text-align:center; color:var(--text-light); font-size:13px; padding:16px 0; }
+
+    /* QR 모달 */
+    .qr-modal-overlay { display:none; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center; padding:16px; }
+    .qr-modal-overlay.show { display:flex; }
+    .qr-modal { background:white; border-radius:var(--radius-lg); padding:28px 24px; text-align:center; max-width:340px; width:100%; box-shadow:0 8px 32px rgba(0,0,0,0.2); animation:slideUp .25s ease; }
+    @keyframes slideUp { from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1} }
+    .qr-modal-name { font-size:17px; font-weight:700; margin-bottom:4px; }
+    .qr-modal-pid { font-size:12px; color:var(--primary); font-weight:600; margin-bottom:14px; }
+    .qr-modal-image { display:inline-block; background:white; padding:10px; border:1px solid var(--border); border-radius:var(--radius-sm); margin-bottom:14px; }
+    .qr-modal-url { font-size:11px; color:var(--text-light); word-break:break-all; margin-bottom:16px; }
+    .qr-modal-actions { display:flex; gap:8px; justify-content:center; }
+    .qr-modal-close { font-family:'Noto Sans KR',sans-serif; font-size:14px; font-weight:600; padding:10px 20px; background:var(--bg-gray); color:var(--text-mid); border:1px solid var(--border); border-radius:6px; cursor:pointer; }
+    .qr-modal-download { font-family:'Noto Sans KR',sans-serif; font-size:14px; font-weight:600; padding:10px 20px; background:var(--primary); color:white; border:none; border-radius:6px; cursor:pointer; }
+    .qr-modal-download:hover { background:var(--primary-light); }
+
+    /* 반응형 */
+    @media(min-width:601px){ .container{padding:20px 20px 40px;} .card{padding:32px;} .logo-header{padding:32px 0 0;} }
+    @media(max-width:600px){
+      .container{padding:12px 12px 32px;} .card{padding:18px;border-radius:12px;}
+      .logo-header .logo-text{font-size:24px;} .logo-header .logo-arc{width:40px;height:14px;}
+      .input-row{flex-direction:column;} .input-label{border-radius:var(--radius-sm) var(--radius-sm) 0 0;padding:10px 16px;font-size:14px;}
+      .input-bottom-row{display:flex;gap:0;} .input-field{border-left:1.5px solid var(--border);border-radius:0 0 0 var(--radius-sm);padding:12px 12px;}
+      .save-btn{border-radius:0 0 var(--radius-sm) 0;padding:12px 16px;font-size:14px;}
+      .qr-card{flex-direction:column;text-align:center;padding:16px;gap:14px;} .qr-actions{justify-content:center;}
+      .history-item{padding:10px;gap:8px;} .history-qr-thumb{width:40px;height:40px;}
+      .history-actions{flex-direction:row;gap:4px;} .history-btn{font-size:10px;padding:5px 8px;}
+      .login-card{padding:32px 24px;}
+    }
+    @media(max-width:360px){
+      .card{padding:14px;} .logo-header .logo-text{font-size:22px;}
+      .save-btn{font-size:13px;padding:10px 14px;} .url-text{font-size:12px;padding:10px 12px;}
+      .history-qr-thumb{width:36px;height:36px;}
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 로그인 -->
+  <div class="login-screen" id="loginScreen">
+    <div class="login-card">
+      <div class="login-logo">Linkable</div>
+      <div class="login-sub">파트너 관리 페이지 접속</div>
+      <div class="login-input-group">
+        <label class="login-input-label">아이디</label>
+        <input type="text" id="loginId" class="login-input" placeholder="관리자 ID" autocomplete="username">
+      </div>
+      <div class="login-input-group">
+        <label class="login-input-label">비밀번호</label>
+        <input type="password" id="loginPw" class="login-input" placeholder="비밀번호" autocomplete="current-password">
+      </div>
+      <button class="login-btn" onclick="handleLogin()">로그인</button>
+      <div class="login-error" id="loginError"></div>
+    </div>
+  </div>
+
+  <!-- 메인 -->
+  <div id="mainContent" style="display:none;">
+    <div class="logo-header">
+      <svg class="logo-arc" viewBox="0 0 48 16" xmlns="http://www.w3.org/2000/svg">
+        <path d="M8 14 C14 2, 34 2, 40 14" stroke="#1A1A2E" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      </svg>
+      <span class="logo-text">Linkable</span>
+    </div>
+
+    <div class="container">
+      <div class="card">
+        <div class="input-section">
+          <div class="input-row" id="inputRow">
+            <div class="input-label">파트너 이름</div>
+            <input type="text" id="partnerInput" class="input-field" placeholder="파트너 이름을 입력 후 Enter 또는 저장" maxlength="30">
+            <button class="save-btn" id="saveBtn" onclick="submitPartner()">저장</button>
+          </div>
+        </div>
+
+        <div class="url-section-label">고객 제공 URL</div>
+        <div class="url-output-box">
+          <div class="url-text placeholder" id="urlOutput">파트너 이름을 입력하면 URL이 자동 생성됩니다</div>
+          <button class="copy-btn" id="copyBtn" onclick="copyURL()">복사</button>
+        </div>
+        <div class="save-status" id="saveStatus"></div>
+
+        <div class="qr-section" id="qrSection">
+          <div class="qr-section-label">QR 코드</div>
+          <div class="qr-card">
+            <div class="qr-image-wrap" id="qrImageWrap"></div>
+            <div class="qr-details">
+              <div class="qr-partner-name" id="qrPartnerName"></div>
+              <div class="qr-pid" id="qrPid"></div>
+              <div class="qr-url-preview" id="qrUrlPreview"></div>
+              <div class="qr-actions">
+                <button class="qr-btn qr-btn-download" onclick="downloadCurrentQR()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  이미지 저장
+                </button>
+                <button class="qr-btn qr-btn-copy" onclick="copyURL()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  URL 복사
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="history-section">
+          <div class="history-title">
+            <span>파트너 목록 (Google Sheets)</span>
+            <button class="history-reload" onclick="loadPartnersFromSheets()">새로고침</button>
+          </div>
+          <ul class="history-list" id="historyList">
+            <li class="loading-history">불러오는 중...</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QR 모달 -->
+  <div class="qr-modal-overlay" id="qrModalOverlay" onclick="closeQrModal(event)">
+    <div class="qr-modal" onclick="event.stopPropagation()">
+      <div class="qr-modal-name" id="modalName"></div>
+      <div class="qr-modal-pid" id="modalPid"></div>
+      <div class="qr-modal-image" id="modalQrImage"></div>
+      <div class="qr-modal-url" id="modalUrl"></div>
+      <div class="qr-modal-actions">
+        <button class="qr-modal-close" onclick="closeQrModal()">닫기</button>
+        <button class="qr-modal-download" id="modalDownloadBtn">이미지 저장</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // 설정
+    // ============================================
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxTxOojQnjK1wbaqAbHl_hGB1_08PiQroJ-fnvPQna0O2lbHR3EY-vLlGamrxZ3qUm_/exec';
+    const BASE_URL = 'https://linkcorp-kr.github.io/booking.html';
+
+    let currentQR = { name:'', pid:'', url:'', dataUrl:'' };
+    let nextPidFromServer = '';
+
+    // ============================================
+    // 로그인
+    // ============================================
+    function checkLogin() { return sessionStorage.getItem('linkable_admin_logged') === 'true'; }
+
+    function handleLogin() {
+      const id = document.getElementById('loginId').value.trim();
+      const pw = document.getElementById('loginPw').value;
+      const errorEl = document.getElementById('loginError');
+      const btn = document.querySelector('.login-btn');
+
+      if (!id || !pw) { errorEl.textContent = '아이디와 비밀번호를 입력해 주세요'; return; }
+
+      btn.disabled = true; btn.textContent = '확인 중...'; errorEl.textContent = '';
+
+      const old = document.getElementById('loginJsonp');
+      if (old) old.remove();
+
+      window._onLoginResult = function(data) {
+        btn.disabled = false; btn.textContent = '로그인';
+        if (data.success) {
+          sessionStorage.setItem('linkable_admin_logged', 'true');
+          document.getElementById('loginScreen').classList.add('hidden');
+          document.getElementById('mainContent').style.display = 'block';
+          initApp();
+        } else {
+          errorEl.textContent = data.message || '로그인 실패';
+          document.getElementById('loginPw').value = '';
+          document.getElementById('loginPw').classList.add('error');
+          document.getElementById('loginPw').focus();
+          setTimeout(() => document.getElementById('loginPw').classList.remove('error'), 1500);
+        }
+      };
+
+      const s = document.createElement('script'); s.id = 'loginJsonp';
+      s.src = APPS_SCRIPT_URL + '?action=login&id=' + encodeURIComponent(id)
+        + '&pw=' + encodeURIComponent(pw) + '&callback=_onLoginResult&_=' + Date.now();
+      s.onerror = function() { btn.disabled=false; btn.textContent='로그인'; errorEl.textContent='서버 연결 실패'; };
+      document.body.appendChild(s);
+    }
+
+    document.getElementById('loginPw').addEventListener('keydown', e => { if(e.key==='Enter') handleLogin(); });
+    document.getElementById('loginId').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('loginPw').focus(); });
+
+    // ============================================
+    // 앱 초기화 (로그인 후)
+    // ============================================
+    function initApp() {
+      adjustLayout();
+      fetchNextPid();
+      loadPartnersFromSheets();
+      document.getElementById('partnerInput').focus();
+    }
+
+    // 모바일 레이아웃
+    function adjustLayout() {
+      const row = document.getElementById('inputRow');
+      const input = document.getElementById('partnerInput');
+      const saveBtn = document.getElementById('saveBtn');
+      if (window.innerWidth <= 600) {
+        if (!document.getElementById('inputBottomRow')) {
+          const w = document.createElement('div'); w.id='inputBottomRow'; w.className='input-bottom-row';
+          row.appendChild(w); w.appendChild(input); w.appendChild(saveBtn);
+        }
+      } else {
+        const w = document.getElementById('inputBottomRow');
+        if (w) { row.appendChild(input); row.appendChild(saveBtn); w.remove(); }
+      }
+    }
+    window.addEventListener('resize', adjustLayout);
+
+    // ============================================
+    // ★ 서버에서 다음 PID 조회
+    // ============================================
+    function fetchNextPid() {
+      const old = document.getElementById('pidJsonp');
+      if (old) old.remove();
+
+      window._onNextPid = function(data) {
+        if (data.success && data.nextPid) {
+          nextPidFromServer = data.nextPid;
+        }
+      };
+
+      const s = document.createElement('script'); s.id = 'pidJsonp';
+      s.src = APPS_SCRIPT_URL + '?action=nextpid&callback=_onNextPid&_=' + Date.now();
+      document.body.appendChild(s);
+    }
+
+    // ============================================
+    // Sheets에서 파트너 목록 불러오기
+    // ============================================
+    function loadPartnersFromSheets() {
+      const list = document.getElementById('historyList');
+      list.innerHTML = '<li class="loading-history">불러오는 중...</li>';
+
+      const old = document.getElementById('jsonpScript');
+      if (old) old.remove();
+
+      window._onPartnersLoaded = function(data) {
+        if (data.success && data.partners) {
+          renderHistory(data.partners);
+        } else {
+          list.innerHTML = '<li class="empty-history">데이터를 불러올 수 없습니다</li>';
+        }
+      };
+
+      const s = document.createElement('script'); s.id='jsonpScript';
+      s.src = APPS_SCRIPT_URL + '?action=partners&callback=_onPartnersLoaded&_=' + Date.now();
+      s.onerror = function() { list.innerHTML = '<li class="empty-history">네트워크 오류</li>'; };
+      document.body.appendChild(s);
+    }
+
+    // ============================================
+    // 히스토리 렌더링 (삭제 버튼 포함)
+    // ============================================
+    function renderHistory(partners) {
+      const list = document.getElementById('historyList');
+      if (!partners || partners.length === 0) {
+        list.innerHTML = '<li class="empty-history">등록된 파트너가 없습니다</li>';
+        return;
+      }
+
+      list.innerHTML = partners.map((item, i) => {
+        const safeUrl = (item.url||'').replace(/'/g, "\\'");
+        const safeName = (item.name||'').replace(/'/g, "\\'");
+        const isActive = (item.status||'') === '활성';
+        return `
+          <li class="history-item" id="row_${item.pid}">
+            <div class="history-qr-thumb" id="hqr_${i}" onclick="openQrModal('${safeName}','${item.pid}','${safeUrl}')" title="QR 확대"></div>
+            <div class="history-meta">
+              <div class="history-meta-top">
+                <span class="history-pid">${esc(item.pid)}</span>
+                <span class="history-name">${esc(item.name)}</span>
+                <span class="history-status ${isActive?'active':'inactive'}">${esc(item.status)}</span>
+              </div>
+              <div class="history-date">${esc(item.date)}</div>
+              <a class="history-url" href="${esc(item.url)}" target="_blank" rel="noopener" title="${esc(item.url)}">${esc(item.url)}</a>
+            </div>
+            <div class="history-actions">
+              <button class="history-btn history-btn-url" onclick="copyText('${safeUrl}',this)">URL</button>
+              <button class="history-btn history-btn-qr" onclick="downloadHistoryQR('${safeName}','${item.pid}','${safeUrl}')">QR</button>
+              <button class="history-btn history-btn-del" onclick="deletePartner('${item.pid}','${safeName}')">삭제</button>
+            </div>
+          </li>`;
+      }).join('');
+
+      partners.forEach((item, i) => {
+        const thumb = document.getElementById('hqr_' + i);
+        if (thumb && item.url) generateQR(thumb, item.url, 38);
+      });
+    }
+
+    // ============================================
+    // ★ 파트너 삭제
+    // ============================================
+    async function deletePartner(pid, name) {
+      if (!confirm(`"${name}" (${pid}) 파트너를 삭제하시겠습니까?`)) return;
+
+      const row = document.getElementById('row_' + pid);
+      if (row) { row.style.opacity = '0.4'; row.style.pointerEvents = 'none'; }
+
+      try {
+        await fetch(APPS_SCRIPT_URL, {
+          method: 'POST', mode: 'no-cors', cache: 'no-cache',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ type: 'deletePartner', pid: pid }),
+          redirect: 'follow'
+        });
+
+        setSaveStatus('saved', pid + ' 파트너가 삭제되었습니다');
+        // 목록 다시 불러오기
+        setTimeout(() => loadPartnersFromSheets(), 1500);
+
+      } catch (err) {
+        if (row) { row.style.opacity = '1'; row.style.pointerEvents = 'auto'; }
+        setSaveStatus('error', '삭제 실패 - 다시 시도해 주세요');
+      }
+    }
+
+    // ============================================
+    // 파트너 저장
+    // ============================================
+    async function submitPartner() {
+      const name = document.getElementById('partnerInput').value.trim();
+      if (!name) { document.getElementById('partnerInput').focus(); return; }
+
+      const saveBtn = document.getElementById('saveBtn');
+      saveBtn.disabled = true; saveBtn.textContent = '저장 중...';
+
+      // 서버에서 최신 PID 가져오기
+      const pid = await getNextPidAsync();
+
+      const finalURL = `${BASE_URL}?partner=${encodeURIComponent(name)}&pid=${pid}`;
+      const urlOutput = document.getElementById('urlOutput');
+      const copyBtn = document.getElementById('copyBtn');
+
+      urlOutput.textContent = finalURL;
+      urlOutput.classList.remove('placeholder');
+      copyBtn.classList.add('visible');
+      showMainQR(name, pid, finalURL);
+
+      // Sheets에 저장
+      setSaveStatus('saving', 'Google Sheets에 저장 중...');
+      try {
+        await fetch(APPS_SCRIPT_URL, {
+          method: 'POST', mode: 'no-cors', cache: 'no-cache',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ type: 'partner', partnerName: name, pid: pid, baseUrl: BASE_URL }),
+          redirect: 'follow'
+        });
+        setSaveStatus('saved', 'Google Sheets에 저장 완료');
+        setTimeout(() => { loadPartnersFromSheets(); fetchNextPid(); }, 1500);
+      } catch (err) {
+        setSaveStatus('error', '저장 실패');
+      }
+
+      saveBtn.disabled = false; saveBtn.textContent = '저장';
+      document.getElementById('partnerInput').value = '';
+      document.getElementById('partnerInput').focus();
+    }
+
+    // 서버에서 PID 비동기 가져오기
+    function getNextPidAsync() {
+      return new Promise((resolve) => {
+        const old = document.getElementById('pidAsyncJsonp');
+        if (old) old.remove();
+
+        window._onPidAsync = function(data) {
+          resolve(data.success && data.nextPid ? data.nextPid : 'P' + String(Date.now()).slice(-3));
+        };
+
+        const s = document.createElement('script'); s.id = 'pidAsyncJsonp';
+        s.src = APPS_SCRIPT_URL + '?action=nextpid&callback=_onPidAsync&_=' + Date.now();
+        s.onerror = function() { resolve('P' + String(Date.now()).slice(-3)); };
+        document.body.appendChild(s);
+
+        // 타임아웃 5초
+        setTimeout(() => resolve(nextPidFromServer || 'P999'), 5000);
+      });
+    }
+
+    // 미리보기
+    const partnerInput = document.getElementById('partnerInput');
+    const urlOutput = document.getElementById('urlOutput');
+    const copyBtn = document.getElementById('copyBtn');
+
+    partnerInput.addEventListener('input', function() {
+      const name = this.value.trim();
+      if (!name) {
+        urlOutput.textContent = '파트너 이름을 입력하면 URL이 자동 생성됩니다';
+        urlOutput.classList.add('placeholder'); copyBtn.classList.remove('visible'); return;
+      }
+      const preview = nextPidFromServer || 'P---';
+      urlOutput.textContent = `${BASE_URL}?partner=${encodeURIComponent(name)}&pid=${preview}`;
+      urlOutput.classList.remove('placeholder');
+      copyBtn.classList.add('visible'); copyBtn.textContent='복사'; copyBtn.classList.remove('copied');
+    });
+
+    partnerInput.addEventListener('keydown', e => { if(e.key==='Enter'){e.preventDefault();submitPartner();} });
+
+    // ============================================
+    // QR
+    // ============================================
+    function generateQR(c,u,s){c.innerHTML='';new QRCode(c,{text:u,width:s||160,height:s||160,colorDark:'#1A1A2E',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});}
+
+    function showMainQR(name,pid,url) {
+      const wrap=document.getElementById('qrImageWrap');
+      generateQR(wrap,url,window.innerWidth<=600?140:160);
+      document.getElementById('qrPartnerName').textContent=name+' 파트너';
+      document.getElementById('qrPid').textContent=pid;
+      document.getElementById('qrUrlPreview').textContent=url;
+      document.getElementById('qrSection').classList.add('show');
+      setTimeout(()=>{const c=wrap.querySelector('canvas');if(c)currentQR={name,pid,url,dataUrl:c.toDataURL('image/png')};},100);
+    }
+
+    function downloadCurrentQR(){if(!currentQR.dataUrl)return;downloadQRImage(currentQR.dataUrl,currentQR.name,currentQR.pid);}
+    function downloadQRImage(d,n,p){const a=document.createElement('a');a.href=d;a.download=`Linkable_QR_${n}_${p}.png`;document.body.appendChild(a);a.click();document.body.removeChild(a);}
+    function downloadHistoryQR(n,p,u){const t=document.createElement('div');t.style.cssText='position:fixed;left:-9999px';document.body.appendChild(t);generateQR(t,u,300);setTimeout(()=>{const c=t.querySelector('canvas');if(c)downloadQRImage(c.toDataURL('image/png'),n,p);document.body.removeChild(t);},150);}
+
+    function openQrModal(n,p,u){
+      document.getElementById('modalName').textContent=n+' 파트너';
+      document.getElementById('modalPid').textContent=p;
+      document.getElementById('modalUrl').textContent=u;
+      const w=document.getElementById('modalQrImage');generateQR(w,u,200);
+      document.getElementById('modalDownloadBtn').onclick=function(){setTimeout(()=>{const c=w.querySelector('canvas');if(c)downloadQRImage(c.toDataURL('image/png'),n,p);},50);};
+      document.getElementById('qrModalOverlay').classList.add('show');
+    }
+    function closeQrModal(e){if(e&&e.target!==document.getElementById('qrModalOverlay')&&e.type==='click')return;document.getElementById('qrModalOverlay').classList.remove('show');}
+    document.addEventListener('keydown',e=>{if(e.key==='Escape')document.getElementById('qrModalOverlay').classList.remove('show');});
+
+    // ============================================
+    // 유틸
+    // ============================================
+    function setSaveStatus(t,m){const el=document.getElementById('saveStatus');el.className='save-status '+t;el.innerHTML=`<span class="save-dot"></span>${m}`;if(t==='saved')setTimeout(()=>{el.innerHTML='';el.className='save-status';},3000);}
+    function copyURL(){const t=urlOutput.textContent;if(!t||urlOutput.classList.contains('placeholder'))return;copyToClipboard(t);copyBtn.textContent='복사됨!';copyBtn.classList.add('copied');setTimeout(()=>{copyBtn.textContent='복사';copyBtn.classList.remove('copied');},2000);}
+    function copyText(t,b){copyToClipboard(t);const o=b.textContent;b.textContent='완료';setTimeout(()=>{b.textContent=o;},1500);}
+    function copyToClipboard(t){if(navigator.clipboard){navigator.clipboard.writeText(t);}else{const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0';document.body.appendChild(a);a.select();document.execCommand('copy');document.body.removeChild(a);}}
+    function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
+
+    // ============================================
+    // 초기 로드
+    // ============================================
+    if (checkLogin()) {
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('mainContent').style.display = 'block';
+      initApp();
+    } else {
+      document.getElementById('loginId').focus();
+    }
+  </script>
+</body>
+</html>
