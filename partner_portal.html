@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>차카고 · 파트너 전용</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  :root{
+    --primary:#173b7a;--primary-d:#0f2a5a;--primary-l:#E8EEF7;
+    --purple:#8E44AD;--purple-l:#F3E5F5;--orange:#E67E22;--orange-l:#FEF3E2;
+    --blue:#3D7A8A;--blue-l:#E3F2F5;--green:#2D6A4F;--green-l:#E9F3EE;--red:#E74C3C;
+    --text:#1A1A2E;--text-mid:#4A4A5A;--text-light:#8A8A9A;
+    --bg:#f6f8fc;--bg-gray:#F0F2F5;--border:#E2E5E9;--white:#fff;
+  }
+  body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;}
+
+  /* 로그인 */
+  .login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#173b7a,#0f2a5a);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;}
+  .login-screen.hidden{display:none;}
+  .login-box{background:#fff;border-radius:16px;padding:40px 32px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+  .login-logo{text-align:center;margin-bottom:8px;}
+  .login-logo svg{width:60px;height:auto;}
+  .login-title{text-align:center;font-size:22px;font-weight:800;margin-bottom:4px;}
+  .login-sub{text-align:center;font-size:13px;color:var(--text-light);margin-bottom:28px;}
+  .login-field{margin-bottom:14px;}
+  .login-field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--text-mid);}
+  .login-field input{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:8px;font-size:15px;font-family:inherit;}
+  .login-field input:focus{outline:none;border-color:var(--primary);}
+  .login-btn{width:100%;padding:13px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px;}
+  .login-btn:hover{background:var(--primary-d);}
+  .login-err{color:var(--red);font-size:13px;text-align:center;margin-top:12px;min-height:18px;}
+  .login-reset{text-align:center;margin-top:16px;}
+  .login-reset span{font-size:13px;color:var(--text-light);cursor:pointer;text-decoration:underline;}
+  .login-reset span:hover{color:var(--primary);}
+
+  /* 초기화 요청 모달 */
+  .reset-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1400;align-items:center;justify-content:center;padding:20px;}
+  .reset-overlay.show{display:flex;}
+  .reset-modal{background:#fff;border-radius:14px;width:100%;max-width:400px;padding:28px;}
+  .reset-modal h3{font-size:18px;font-weight:700;margin-bottom:8px;}
+  .reset-modal p{font-size:13px;color:var(--text-mid);margin-bottom:18px;line-height:1.6;}
+  .reset-modal input{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:8px;font-size:15px;font-family:inherit;margin-bottom:12px;}
+  .reset-modal input:focus{outline:none;border-color:var(--primary);}
+  .reset-actions{display:flex;gap:8px;}
+  .reset-actions button{flex:1;font-family:inherit;font-size:14px;font-weight:600;padding:12px;border-radius:8px;cursor:pointer;border:none;}
+  .reset-cancel{background:var(--bg-gray);color:var(--text-mid);}
+  .reset-submit{background:var(--primary);color:#fff;}
+  .reset-msg{font-size:13px;text-align:center;margin-top:12px;min-height:18px;}
+  .reset-msg.ok{color:var(--primary);}
+  .reset-msg.err{color:var(--red);}
+
+  /* 헤더 */
+  .header{background:#fff;border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+  .header-left{display:flex;align-items:center;gap:12px;}
+  .header-logo{display:flex;align-items:center;gap:8px;font-size:18px;font-weight:800;}
+  .header-logo svg{width:34px;height:auto;}
+  .header-badge{font-size:11px;font-weight:600;color:var(--primary);background:var(--primary-l);padding:3px 10px;border-radius:12px;}
+  .header-right{display:flex;align-items:center;gap:14px;}
+  .header-user{font-size:13px;color:var(--text-mid);}
+  .header-card-btn{font-size:13px;font-weight:600;color:var(--primary);background:var(--primary-l);border:1px solid var(--primary);padding:6px 14px;border-radius:6px;cursor:pointer;font-family:inherit;}
+  .header-card-btn:hover{background:#dce6f5;}
+  .header-logout{font-size:13px;color:var(--text-light);background:none;border:1px solid var(--border);padding:6px 14px;border-radius:6px;cursor:pointer;font-family:inherit;}
+  .header-logout:hover{background:var(--bg-gray);}
+
+  #mainContent{display:none;}
+  .container{max-width:1080px;margin:0 auto;padding:24px 20px 60px;}
+  .page-title{font-size:20px;font-weight:800;margin-bottom:4px;}
+  .page-sub{font-size:13px;color:var(--text-light);margin-bottom:20px;}
+
+  /* 요약 칩 */
+  .stat-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:22px;}
+  .stat-chip{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 18px;min-width:92px;}
+  .stat-chip .n{font-size:22px;font-weight:800;}
+  .stat-chip .l{font-size:12px;color:var(--text-light);margin-top:2px;}
+  .stat-chip.total .n{color:var(--text);}
+  .stat-chip.assigned .n{color:var(--green);}
+  .stat-chip.waiting .n{color:var(--orange);}
+
+  /* 리스트 툴바 */
+  .list-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+  .list-count{font-size:13px;color:var(--text-mid);font-weight:500;}
+  .page-size{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-light);}
+  .ps-btn{font-family:inherit;font-size:13px;font-weight:600;padding:6px 12px;border:1px solid var(--border);background:#fff;color:var(--text-mid);border-radius:6px;cursor:pointer;}
+  .ps-btn:hover{background:var(--bg-gray);}
+  .ps-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+
+  /* 상담 카드 (아코디언) */
+  .booking-card{background:#fff;border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden;}
+  .bc-head{padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;cursor:pointer;transition:background .15s;}
+  .bc-head:hover{background:var(--bg-gray);}
+  .booking-card.open .bc-head{border-bottom:1px solid var(--border);}
+  .bc-head-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:1;min-width:0;}
+  .bc-customer{font-size:16px;font-weight:700;}
+  .bc-summary{font-size:12px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .bc-head-right{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+  .bc-date{font-size:12px;color:var(--text-light);}
+  .bc-toggle{font-size:13px;color:var(--text-light);transition:transform .2s;}
+  .booking-card.open .bc-toggle{transform:rotate(180deg);}
+  .bc-body{display:none;padding:16px 20px;}
+  .booking-card.open .bc-body{display:block;}
+
+  .badge{display:inline-block;font-size:12px;font-weight:700;padding:4px 12px;border-radius:14px;}
+  .badge-wait{background:var(--orange-l);color:var(--orange);}
+  .badge-assigned{background:var(--green-l);color:var(--green);}
+  .progress-badge{display:inline-block;font-size:12px;font-weight:700;padding:4px 12px;border-radius:14px;}
+  .pg-접수{background:#F0F2F5;color:#4A4A5A;}
+  .pg-상담진행{background:#E3F2F5;color:#3D7A8A;}
+  .pg-상담완료{background:#E9F3EE;color:#2D6A4F;}
+  .pg-견적안내{background:#FFF3E0;color:#E67E22;}
+  .pg-계약완료{background:#F3E5F5;color:#8E44AD;}
+  .pg-발주진행{background:#E1F5FE;color:#0277BD;}
+  .pg-출고완료{background:#E8F5E9;color:#2E7D32;}
+  .pg-고객인도{background:#FCE4EC;color:#C2185B;}
+
+  .info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px 20px;margin-bottom:16px;}
+  .info-item{font-size:13px;}
+  .info-item .k{color:var(--text-light);font-size:11px;margin-bottom:2px;}
+  .info-item .v{color:var(--text);font-weight:500;}
+
+  /* 배정 정보 박스 */
+  .assign-box{padding:14px 16px;background:var(--green-l);border-radius:10px;margin-bottom:16px;font-size:14px;}
+  .assign-box .ab-label{font-size:12px;color:var(--text-light);margin-bottom:4px;}
+  .assign-box .ab-value{font-weight:700;color:var(--green);}
+  .wait-box{padding:14px 16px;background:var(--orange-l);border-radius:10px;margin-bottom:4px;font-size:13px;color:var(--orange);text-align:center;font-weight:600;}
+
+  /* 상담 이력 (조회 전용) */
+  .log-section{border-top:1px solid var(--border);padding-top:16px;}
+  .log-title{font-size:14px;font-weight:700;margin-bottom:12px;}
+  .log-list{display:flex;flex-direction:column;gap:10px;}
+  .log-item{display:flex;gap:12px;padding:12px 14px;background:var(--bg-gray);border-radius:10px;}
+  .log-avatar{width:34px;height:34px;border-radius:50%;background:var(--green-l);color:var(--green);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;}
+  .log-content{flex:1;min-width:0;}
+  .log-meta{display:flex;align-items:center;gap:8px;margin-bottom:3px;flex-wrap:wrap;}
+  .log-name{font-size:13px;font-weight:700;}
+  .log-date{font-size:11px;color:var(--text-light);}
+  .log-text{font-size:13px;color:var(--text-mid);white-space:pre-wrap;word-break:break-word;}
+  .log-empty{font-size:13px;color:var(--text-light);text-align:center;padding:14px;}
+
+  .pagination{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:20px;flex-wrap:wrap;}
+  .pg-btn{font-family:inherit;font-size:13px;font-weight:600;min-width:36px;height:36px;padding:0 10px;border:1px solid var(--border);background:#fff;color:var(--text-mid);border-radius:8px;cursor:pointer;}
+  .pg-btn:hover:not(:disabled){background:var(--bg-gray);}
+  .pg-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+  .pg-btn:disabled{opacity:.4;cursor:not-allowed;}
+  .pg-ellipsis{color:var(--text-light);padding:0 4px;}
+
+  .empty{text-align:center;padding:50px 20px;color:var(--text-light);font-size:14px;background:#fff;border-radius:12px;border:1px solid var(--border);}
+  .loading{text-align:center;padding:40px;color:var(--text-light);}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;z-index:2000;opacity:0;transition:opacity .3s;pointer-events:none;}
+  .toast.show{opacity:1;}
+
+  /* 명함 모달 (파트너용 = QR 포함) */
+  .bcard-overlay{display:none;position:fixed;inset:0;background:rgba(10,15,31,.75);z-index:1300;align-items:center;justify-content:center;padding:16px;overflow-y:auto;}
+  .bcard-overlay.show{display:flex;}
+  .bcard-modal{display:flex;flex-direction:column;align-items:center;gap:16px;}
+  .bcard-actions{display:flex;gap:8px;}
+  .bcard-btn{font-family:'Noto Sans KR',sans-serif;font-size:14px;font-weight:600;padding:11px 22px;border:none;border-radius:8px;cursor:pointer;}
+  .bcard-btn-close{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);}
+  .bcard-btn-dl{background:linear-gradient(135deg,#E4C876,#C9A24B);color:#0A1529;}
+  .biz-card{--navy:#0F1E3D;--navy-deep:#0A1529;--gold:#C9A24B;--gold-light:#E4C876;--gold-soft:#D9BE7E;--cl:#F4F6FA;--cm:#A8B2C4;--ln:rgba(201,162,75,0.25);width:340px;background:linear-gradient(165deg,#0F1E3D 0%,#0A1529 100%);border-radius:20px;overflow:hidden;position:relative;box-shadow:0 30px 80px rgba(0,0,0,0.5),0 0 0 1px rgba(201,162,75,0.15);font-family:'Noto Sans KR',sans-serif;}
+  .biz-card .bd-top{position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,transparent,#C9A24B,#E4C876,#C9A24B,transparent);}
+  .biz-card .bd-deco{position:absolute;top:-60px;right:-60px;width:160px;height:160px;border-radius:50%;border:1px solid var(--ln);opacity:.5;}
+  .biz-card .bd-header{padding:22px 30px 0;text-align:center;position:relative;z-index:2;}
+  .biz-card .bd-logo{width:46px;height:auto;margin:0 auto 4px;display:block;}
+  .biz-card .bd-brand{font-size:20px;font-weight:800;letter-spacing:-0.5px;color:var(--cl);}
+  .biz-card .bd-tag{font-size:9px;font-weight:500;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold);margin-top:3px;}
+  .biz-card .bd-divider{display:flex;align-items:center;gap:10px;padding:0 30px;margin:16px 0 14px;}
+  .biz-card .bd-dline{flex:1;height:1px;background:var(--ln);}
+  .biz-card .bd-ddot{width:5px;height:5px;border-radius:50%;background:var(--gold);}
+  .biz-card .bd-profile{text-align:center;padding:0 30px;position:relative;z-index:2;}
+  .biz-card .bd-name{font-size:25px;font-weight:700;margin-bottom:6px;color:var(--cl);}
+  .biz-card .bd-badge{display:inline-block;font-size:11px;font-weight:600;letter-spacing:1px;color:var(--navy-deep);background:linear-gradient(135deg,var(--gold-light),var(--gold));padding:4px 16px;border-radius:20px;}
+  .biz-card .bd-qr-sec{margin:16px 30px 0;padding:16px;text-align:center;background:rgba(255,255,255,0.03);border:1px solid var(--ln);border-radius:16px;position:relative;z-index:2;}
+  .biz-card .bd-qr-label{font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:12px;}
+  .biz-card .bd-qr-box{width:120px;height:120px;margin:0 auto;padding:9px;background:#fff;border-radius:12px;}
+  .biz-card .bd-qr-box img,.biz-card .bd-qr-box canvas{width:100%!important;height:100%!important;display:block;}
+  .biz-card .bd-qr-desc{font-size:11px;color:var(--cm);margin-top:11px;line-height:1.5;}
+  .biz-card .bd-contact{padding:16px 30px 0;position:relative;z-index:2;}
+  .biz-card .bd-citem{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.06);}
+  .biz-card .bd-citem:last-child{border-bottom:none;}
+  .biz-card .bd-cicon{width:32px;height:32px;border-radius:10px;flex-shrink:0;background:rgba(201,162,75,0.12);border:1px solid var(--ln);display:flex;align-items:center;justify-content:center;}
+  .biz-card .bd-cicon svg{width:15px;height:15px;stroke:var(--gold-light);}
+  .biz-card .bd-ctext{flex:1;min-width:0;}
+  .biz-card .bd-clabel{font-size:9px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;color:var(--cm);margin-bottom:2px;}
+  .biz-card .bd-cvalue{font-size:14px;font-weight:500;color:var(--cl);word-break:break-all;}
+  .biz-card .bd-footer{margin-top:16px;padding:13px 30px;text-align:center;background:rgba(0,0,0,0.25);border-top:1px solid var(--ln);position:relative;z-index:2;}
+  .biz-card .bd-ftext{font-size:10px;color:var(--cm);}
+  .biz-card .bd-fbrand{color:var(--gold-soft);font-weight:600;}
+
+  @media(max-width:600px){.header{padding:12px 14px;}.container{padding:16px 12px 40px;}}
+</style>
+</head>
+<body>
+
+<!-- 로그인 -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">
+      <svg viewBox="0 0 200 75" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15,52 L32,52 L38,24 C42,14 55,10 70,10 L130,10 C145,10 158,14 162,24 L168,52 L185,52" fill="none" stroke="#173b7a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="55" cy="56" r="13" fill="none" stroke="#173b7a" stroke-width="4.5"/>
+        <circle cx="145" cy="56" r="13" fill="none" stroke="#173b7a" stroke-width="4.5"/>
+      </svg>
+    </div>
+    <div class="login-title">파트너 전용 페이지</div>
+    <div class="login-sub">차카고 파트너 로그인</div>
+    <div class="login-field">
+      <label>아이디 (이메일)</label>
+      <input type="text" id="loginId" placeholder="등록된 이메일 주소" autocomplete="username">
+    </div>
+    <div class="login-field">
+      <label>비밀번호</label>
+      <input type="password" id="loginPw" placeholder="비밀번호 입력" autocomplete="current-password">
+    </div>
+    <button class="login-btn" id="loginBtn">로그인</button>
+    <div class="login-err" id="loginErr"></div>
+    <div class="login-reset"><span onclick="openResetRequest()">비밀번호를 잊으셨나요?</span></div>
+  </div>
+</div>
+
+<!-- 비밀번호 초기화 요청 모달 -->
+<div class="reset-overlay" id="resetOverlay" onclick="closeResetRequest(event)">
+  <div class="reset-modal" onclick="event.stopPropagation()">
+    <h3>비밀번호 초기화</h3>
+    <p>가입하신 이메일(아이디)을 입력하시면, 해당 메일로 비밀번호 재설정 링크를 보내드립니다.</p>
+    <input type="email" id="resetEmail" placeholder="등록된 이메일 주소" autocomplete="username">
+    <div class="reset-actions">
+      <button class="reset-cancel" onclick="closeResetRequest()">취소</button>
+      <button class="reset-submit" id="resetSubmitBtn" onclick="submitResetRequest()">재설정 링크 받기</button>
+    </div>
+    <div class="reset-msg" id="resetMsg"></div>
+  </div>
+</div>
+
+<!-- 메인 -->
+<div id="mainContent">
+  <div class="header">
+    <div class="header-left">
+      <div class="header-logo">
+        <svg viewBox="0 0 200 75" xmlns="http://www.w3.org/2000/svg">
+          <path d="M15,52 L32,52 L38,24 C42,14 55,10 70,10 L130,10 C145,10 158,14 162,24 L168,52 L185,52" fill="none" stroke="#1A1A2E" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="55" cy="56" r="13" fill="none" stroke="#1A1A2E" stroke-width="4.5"/>
+          <circle cx="145" cy="56" r="13" fill="none" stroke="#1A1A2E" stroke-width="4.5"/>
+        </svg>
+        차카고
+      </div>
+      <span class="header-badge">파트너</span>
+    </div>
+    <div class="header-right">
+      <button class="header-card-btn" id="myCardBtn">내 명함</button>
+      <span class="header-user" id="headerUser"></span>
+      <button class="header-logout" id="logoutBtn">로그아웃</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="page-title" id="welcomeTitle">내 상담 신청 목록</div>
+    <div class="page-sub">나를 통해 접수된 상담 신청 내역과 진행 현황을 확인할 수 있습니다.</div>
+
+    <div class="stat-row" id="statRow"></div>
+
+    <div class="list-toolbar" id="listToolbar" style="display:none">
+      <div class="list-count" id="listCount"></div>
+      <div class="page-size">
+        <span>표시 개수</span>
+        <button class="ps-btn" data-size="10" onclick="setPageSize(10)">10개</button>
+        <button class="ps-btn" data-size="20" onclick="setPageSize(20)">20개</button>
+        <button class="ps-btn" data-size="50" onclick="setPageSize(50)">50개</button>
+      </div>
+    </div>
+
+    <div id="bookingList"><div class="loading">불러오는 중...</div></div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- 내 명함 모달 -->
+<div class="bcard-overlay" id="bcardOverlay" onclick="closeCard(event)">
+  <div class="bcard-modal" onclick="event.stopPropagation()">
+    <div id="bcardHost"></div>
+    <div class="bcard-actions">
+      <button class="bcard-btn bcard-btn-close" onclick="closeCard()">닫기</button>
+      <button class="bcard-btn bcard-btn-dl" id="bcardDlBtn">명함 이미지 저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API='https://script.google.com/macros/s/AKfycbxTxOojQnjK1wbaqAbHl_hGB1_08PiQroJ-fnvPQna0O2lbHR3EY-vLlGamrxZ3qUm_/exec';
+  const SESSION_KEY='chakago_partner_portal';
+
+  let _me={pid:'',name:'',email:'',phone:'',url:''};
+  const _logsLoaded={};
+  let _allBookings=[], _pageSize=10, _currentPage=1;
+
+  function esc(s){const d=document.createElement('div');d.textContent=(s==null?'':s);return d.innerHTML;}
+  function fmtPhone(p){p=(p||'').toString().replace(/[^0-9]/g,'');if(p.length===10&&p.charAt(0)==='1'&&p.charAt(1)==='0')p='0'+p;if(p.length===11)return p.slice(0,3)+'-'+p.slice(3,7)+'-'+p.slice(7);if(p.length===10)return p.slice(0,3)+'-'+p.slice(3,6)+'-'+p.slice(6);return p||'';}
+  function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+  function jsonp(params,cb){
+    const cbName='_jp_'+Math.random().toString(36).slice(2);
+    window[cbName]=function(d){cb(d);delete window[cbName];s.remove();};
+    const qs=Object.keys(params).map(k=>k+'='+encodeURIComponent(params[k])).join('&');
+    const s=document.createElement('script');
+    s.src=API+'?'+qs+'&callback='+cbName;
+    s.onerror=function(){cb({success:false,message:'네트워크 오류'});delete window[cbName];s.remove();};
+    document.body.appendChild(s);
+  }
+
+  // ===== 로그인 =====
+  function checkLogin(){return sessionStorage.getItem(SESSION_KEY)==='true';}
+  function doLogin(){
+    const id=document.getElementById('loginId').value.trim();
+    const pw=document.getElementById('loginPw').value.trim();
+    const err=document.getElementById('loginErr');
+    const btn=document.getElementById('loginBtn');
+    if(!id||!pw){err.textContent='아이디와 비밀번호를 입력해 주세요';return;}
+    btn.disabled=true;btn.textContent='확인 중...';err.textContent='';
+    jsonp({action:'partnerPortalLogin',id:id,pw:pw},function(d){
+      btn.disabled=false;btn.textContent='로그인';
+      if(d.success){
+        _me={pid:d.pid,name:d.name,email:d.email,phone:d.phone||'',url:d.url||''};
+        sessionStorage.setItem(SESSION_KEY,'true');
+        sessionStorage.setItem(SESSION_KEY+'_data',JSON.stringify(_me));
+        showMain();
+      }else{
+        err.textContent=d.message||'로그인 실패';
+        document.getElementById('loginPw').value='';
+        document.getElementById('loginPw').focus();
+      }
+    });
+  }
+  function showMain(){
+    if(!_me.name){ try{_me=JSON.parse(sessionStorage.getItem(SESSION_KEY+'_data'))||{};}catch(e){} }
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('mainContent').style.display='block';
+    document.getElementById('headerUser').textContent=(_me.name||'파트너')+' 님';
+    document.getElementById('welcomeTitle').textContent=_me.name+' 파트너님의 상담 신청 목록';
+    loadMyBookings();
+  }
+  function logout(){sessionStorage.removeItem(SESSION_KEY);sessionStorage.removeItem(SESSION_KEY+'_data');location.reload();}
+
+  document.getElementById('loginBtn').addEventListener('click',doLogin);
+  document.getElementById('loginPw').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+  document.getElementById('loginId').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('loginPw').focus();});
+  document.getElementById('logoutBtn').addEventListener('click',logout);
+
+  // ===== 비밀번호 초기화 요청 =====
+  function openResetRequest(){
+    document.getElementById('resetEmail').value=document.getElementById('loginId').value.trim();
+    document.getElementById('resetMsg').textContent='';document.getElementById('resetMsg').className='reset-msg';
+    document.getElementById('resetOverlay').classList.add('show');
+    setTimeout(()=>document.getElementById('resetEmail').focus(),100);
+  }
+  function closeResetRequest(e){
+    if(e&&e.target!==document.getElementById('resetOverlay')&&e.type==='click')return;
+    document.getElementById('resetOverlay').classList.remove('show');
+  }
+  function submitResetRequest(){
+    const email=document.getElementById('resetEmail').value.trim();
+    const msg=document.getElementById('resetMsg');
+    const btn=document.getElementById('resetSubmitBtn');
+    if(!email){msg.className='reset-msg err';msg.textContent='이메일을 입력해 주세요';return;}
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){msg.className='reset-msg err';msg.textContent='올바른 이메일 형식이 아닙니다';return;}
+    btn.disabled=true;btn.textContent='발송 중...';msg.textContent='';
+    jsonp({action:'requestPartnerPasswordReset',email:email},function(d){
+      btn.disabled=false;btn.textContent='재설정 링크 받기';
+      msg.className='reset-msg ok';
+      msg.textContent='가입된 이메일이라면 재설정 링크를 발송했습니다. 메일함을 확인해 주세요.';
+      setTimeout(()=>{document.getElementById('resetOverlay').classList.remove('show');},3000);
+    });
+  }
+  document.getElementById('resetEmail').addEventListener('keydown',e=>{if(e.key==='Enter')submitResetRequest();});
+
+  // ===== 내 유입 상담 목록 =====
+  function loadMyBookings(){
+    document.getElementById('bookingList').innerHTML='<div class="loading">불러오는 중...</div>';
+    for(var k in _logsLoaded) delete _logsLoaded[k];
+    jsonp({action:'partnerBookings',pid:_me.pid},function(d){
+      if(!d.success){document.getElementById('bookingList').innerHTML='<div class="empty">불러올 수 없습니다</div>';return;}
+      renderStat(d.stat);
+      _allBookings=d.bookings||[];
+      _currentPage=1;
+      renderPage();
+    });
+  }
+
+  function renderStat(stat){
+    stat=stat||{total:0};
+    let html=`<div class="stat-chip total"><div class="n">${stat.total||0}</div><div class="l">전체</div></div>`;
+    if(stat['배정완료']) html+=`<div class="stat-chip assigned"><div class="n">${stat['배정완료']}</div><div class="l">배정완료</div></div>`;
+    if(stat['배정대기']) html+=`<div class="stat-chip waiting"><div class="n">${stat['배정대기']}</div><div class="l">배정대기</div></div>`;
+    document.getElementById('statRow').innerHTML=html;
+  }
+
+  function setPageSize(size){_pageSize=size;_currentPage=1;renderPage();}
+
+  function renderPage(){
+    const total=_allBookings.length;
+    const toolbar=document.getElementById('listToolbar');
+    if(total===0){toolbar.style.display='none';document.getElementById('pagination').innerHTML='';renderBookings([]);return;}
+    toolbar.style.display='flex';
+    document.querySelectorAll('.ps-btn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.size,10)===_pageSize));
+    const totalPages=Math.max(1,Math.ceil(total/_pageSize));
+    if(_currentPage>totalPages)_currentPage=totalPages;
+    const start=(_currentPage-1)*_pageSize, end=Math.min(start+_pageSize,total);
+    document.getElementById('listCount').textContent=`전체 ${total}건 중 ${start+1}~${end}건`;
+    for(var k in _logsLoaded) delete _logsLoaded[k];
+    renderBookings(_allBookings.slice(start,end));
+    renderPagination(totalPages);
+  }
+
+  function renderPagination(totalPages){
+    const box=document.getElementById('pagination');
+    if(totalPages<=1){box.innerHTML='';return;}
+    let html=`<button class="pg-btn" onclick="goPage(${_currentPage-1})" ${_currentPage===1?'disabled':''}>‹</button>`;
+    const pages=[];const range=2;
+    for(let i=1;i<=totalPages;i++){if(i===1||i===totalPages||(i>=_currentPage-range&&i<=_currentPage+range))pages.push(i);}
+    let prev=0;
+    pages.forEach(p=>{if(p-prev>1)html+=`<span class="pg-ellipsis">…</span>`;html+=`<button class="pg-btn ${p===_currentPage?'active':''}" onclick="goPage(${p})">${p}</button>`;prev=p;});
+    html+=`<button class="pg-btn" onclick="goPage(${_currentPage+1})" ${_currentPage===totalPages?'disabled':''}>›</button>`;
+    box.innerHTML=html;
+  }
+  function goPage(p){
+    const totalPages=Math.max(1,Math.ceil(_allBookings.length/_pageSize));
+    if(p<1||p>totalPages)return;
+    _currentPage=p;renderPage();
+    document.getElementById('listToolbar').scrollIntoView({behavior:'smooth',block:'start'});
+  }
+
+  function renderBookings(list){
+    const box=document.getElementById('bookingList');
+    if(!list||list.length===0){box.innerHTML='<div class="empty">접수된 상담 신청이 없습니다.</div>';return;}
+    box.innerHTML=list.map(b=>{
+      // 배정 여부에 따라 배지 다름
+      let statusBadge;
+      if(b.isAssigned){
+        const pg=b.progress||'접수';
+        statusBadge=`<span class="progress-badge pg-${esc(pg)}">${esc(pg)}</span>`;
+      }else{
+        statusBadge='<span class="badge badge-wait">배정 대기</span>';
+      }
+      const summary=[b.vehicleTypes,b.region,fmtPhone(b.phoneNumber)].filter(Boolean).join(' · ');
+      return `<div class="booking-card" id="card_${b.row}">
+        <div class="bc-head" onclick="toggleCard(${b.row})">
+          <div class="bc-head-left">
+            <span class="bc-customer">${esc(b.customerName)}</span>
+            ${statusBadge}
+            <span class="bc-summary">${esc(summary)}</span>
+          </div>
+          <div class="bc-head-right">
+            <span class="bc-date">${esc(b.date)}</span>
+            <span class="bc-toggle">▼</span>
+          </div>
+        </div>
+        <div class="bc-body" id="body_${b.row}"></div>
+      </div>`;
+    }).join('');
+  }
+
+  function toggleCard(row){
+    const card=document.getElementById('card_'+row);
+    if(!card)return;
+    const willOpen=!card.classList.contains('open');
+    card.classList.toggle('open');
+    if(willOpen && !_logsLoaded[row]){
+      _logsLoaded[row]=true;
+      renderCardBody(row);
+    }
+  }
+
+  // 카드 본문 렌더링 (배정 전/후 구분)
+  function renderCardBody(row){
+    const b=_allBookings.find(x=>x.row===row);
+    const body=document.getElementById('body_'+row);
+    if(!b||!body)return;
+
+    // 공통: 상담 신청 정보
+    let html=`<div class="info-grid">
+      <div class="info-item"><div class="k">연락처</div><div class="v">${esc(fmtPhone(b.phoneNumber))}</div></div>
+      <div class="info-item"><div class="k">관심 차종</div><div class="v">${esc(b.vehicleTypes)||'-'}</div></div>
+      <div class="info-item"><div class="k">거주 지역</div><div class="v">${esc(b.region)||'-'}</div></div>
+      <div class="info-item"><div class="k">통화 가능시간</div><div class="v">${esc(b.callTime)||'-'}</div></div>
+      <div class="info-item"><div class="k">기타 문의</div><div class="v">${esc(b.inquiry)||'없음'}</div></div>
+    </div>`;
+
+    if(b.isAssigned){
+      // 배정 후: 배정 상담사 + 진행상황 + 상담 이력 (조회 전용)
+      html+=`<div class="assign-box">
+        <div class="ab-label">배정 상담사 · 진행상황</div>
+        <div class="ab-value">${esc(b.assignedConsultant)} · ${esc(b.progress||'접수')}</div>
+      </div>`;
+      html+=`<div class="log-section">
+        <div class="log-title">💬 상담 진행 이력</div>
+        <div class="log-list" id="logs_${row}"><div class="log-empty">불러오는 중...</div></div>
+      </div>`;
+      body.innerHTML=html;
+      // 상담 이력 로드
+      jsonp({action:'consultLogs',bookingRow:row},function(d){
+        const lbox=document.getElementById('logs_'+row);
+        if(!lbox)return;
+        if(!d.success||!d.logs||d.logs.length===0){lbox.innerHTML='<div class="log-empty">아직 상담 진행 이력이 없습니다.</div>';return;}
+        lbox.innerHTML=d.logs.map(l=>{
+          const initial=(l.consultantName||'?').charAt(0);
+          return `<div class="log-item">
+            <div class="log-avatar">${esc(initial)}</div>
+            <div class="log-content">
+              <div class="log-meta"><span class="log-name">${esc(l.consultantName)}</span><span class="log-date">${esc(l.date)}</span></div>
+              <div class="log-text">${esc(l.content)}</div>
+            </div>
+          </div>`;
+        }).join('');
+      });
+    }else{
+      // 배정 전: 신청 내용만 + 대기 안내
+      html+=`<div class="wait-box">아직 상담사가 배정되지 않았습니다. 배정 후 진행 현황이 표시됩니다.</div>`;
+      body.innerHTML=html;
+    }
+  }
+
+  // ===== 내 명함 (파트너 = QR 포함) =====
+  function genQR(c,u,s){c.innerHTML='';new QRCode(c,{text:u,width:s||160,height:s||160,colorDark:'#1A1A2E',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});}
+  function buildCardHtml(p){
+    const name=p.name||'';
+    const phone=fmtPhone(p.phone);
+    const email=p.email||'';
+    let contactHtml='';
+    if(phone){contactHtml+=`<div class="bd-citem"><div class="bd-cicon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div><div class="bd-ctext"><div class="bd-clabel">Phone</div><div class="bd-cvalue">${esc(phone)}</div></div></div>`;}
+    if(email){contactHtml+=`<div class="bd-citem"><div class="bd-cicon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></div><div class="bd-ctext"><div class="bd-clabel">Email</div><div class="bd-cvalue">${esc(email)}</div></div></div>`;}
+    const contactSection=contactHtml?`<div class="bd-contact">${contactHtml}</div>`:'';
+    return `<div class="biz-card" id="bizCard">
+      <div class="bd-top"></div><div class="bd-deco"></div>
+      <div class="bd-header">
+        <svg class="bd-logo" viewBox="0 0 200 75" xmlns="http://www.w3.org/2000/svg"><path d="M15,52 L32,52 L38,24 C42,14 55,10 70,10 L130,10 C145,10 158,14 162,24 L168,52 L185,52" fill="none" stroke="#E4C876" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="55" cy="56" r="13" fill="none" stroke="#E4C876" stroke-width="4.5"/><circle cx="145" cy="56" r="13" fill="none" stroke="#E4C876" stroke-width="4.5"/></svg>
+        <div class="bd-brand">차카고</div><div class="bd-tag">Car Consulting Partner</div>
+      </div>
+      <div class="bd-divider"><div class="bd-dline"></div><div class="bd-ddot"></div><div class="bd-dline"></div></div>
+      <div class="bd-profile"><div class="bd-name">${esc(name)}</div><div class="bd-badge">파트너</div></div>
+      ${contactSection}
+      <div class="bd-qr-sec">
+        <div class="bd-qr-label">상담 예약 바로가기</div>
+        <div class="bd-qr-box" id="bizQrBox"></div>
+        <div class="bd-qr-desc">QR 코드를 스캔하면<br>${esc(name)} 파트너에게 상담 예약이 접수됩니다</div>
+      </div>
+      <div class="bd-footer"><div class="bd-ftext"><span class="bd-fbrand">차카고</span> · 믿을 수 있는 자동차 상담 파트너</div></div>
+    </div>`;
+  }
+  function openMyCard(){
+    if(!_me.url){toast('명함 URL 정보가 없습니다');return;}
+    document.getElementById('bcardHost').innerHTML=buildCardHtml(_me);
+    genQR(document.getElementById('bizQrBox'),_me.url,110);
+    document.getElementById('bcardDlBtn').onclick=()=>downloadCard(_me.name,_me.pid);
+    document.getElementById('bcardOverlay').classList.add('show');
+  }
+  function closeCard(e){
+    if(e&&e.target!==document.getElementById('bcardOverlay')&&e.type==='click')return;
+    document.getElementById('bcardOverlay').classList.remove('show');
+  }
+  function downloadCard(name,pid){
+    const btn=document.getElementById('bcardDlBtn');
+    const card=document.getElementById('bizCard');
+    if(!card)return;
+    btn.textContent='이미지 생성 중...';btn.disabled=true;
+    setTimeout(()=>{
+      html2canvas(card,{backgroundColor:null,scale:3,useCORS:true,logging:false}).then(canvas=>{
+        const a=document.createElement('a');a.href=canvas.toDataURL('image/png');
+        a.download='차카고_명함_'+name+'_'+pid+'.png';
+        document.body.appendChild(a);a.click();document.body.removeChild(a);
+        btn.textContent='명함 이미지 저장';btn.disabled=false;
+      }).catch(()=>{btn.textContent='명함 이미지 저장';btn.disabled=false;alert('이미지 생성 중 오류가 발생했습니다.');});
+    },300);
+  }
+  document.getElementById('myCardBtn').addEventListener('click',openMyCard);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.getElementById('bcardOverlay').classList.remove('show');document.getElementById('resetOverlay').classList.remove('show');}});
+
+  if(checkLogin()){showMain();}
+</script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>차카고 · 비밀번호 재설정</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  :root{--primary:#173b7a;--primary-d:#0f2a5a;--primary-l:#E8EEF7;--red:#E74C3C;--text:#1A1A2E;--text-mid:#4A4A5A;--text-light:#8A8A9A;--border:#E2E5E9;}
+  body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:linear-gradient(135deg,#173b7a,#0f2a5a);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;color:var(--text);}
+  .box{background:#fff;border-radius:16px;padding:40px 32px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+  .logo{text-align:center;margin-bottom:8px;}
+  .logo svg{width:56px;height:auto;}
+  .title{text-align:center;font-size:20px;font-weight:800;margin-bottom:4px;}
+  .sub{text-align:center;font-size:13px;color:var(--text-light);margin-bottom:26px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--text-mid);}
+  .field input{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:8px;font-size:15px;font-family:inherit;}
+  .field input:focus{outline:none;border-color:var(--primary);}
+  .field .hint{font-size:11px;color:var(--text-light);margin-top:4px;}
+  .btn{width:100%;padding:13px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px;}
+  .btn:hover{background:var(--primary-d);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  .msg{font-size:13px;text-align:center;margin-top:14px;min-height:18px;line-height:1.5;}
+  .msg.ok{color:var(--primary);}
+  .msg.err{color:var(--red);}
+  .state{text-align:center;padding:20px 0;}
+  .state.loading{color:var(--text-light);}
+  .state-icon{font-size:40px;margin-bottom:12px;}
+  .state-title{font-size:17px;font-weight:700;margin-bottom:8px;}
+  .state-text{font-size:13px;color:var(--text-mid);line-height:1.6;}
+  .back-link{display:inline-block;margin-top:18px;font-size:13px;color:var(--primary);text-decoration:underline;cursor:pointer;}
+  #resetForm{display:none;}
+</style>
+</head>
+<body>
+  <div class="box">
+    <div class="logo">
+      <svg viewBox="0 0 200 75" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15,52 L32,52 L38,24 C42,14 55,10 70,10 L130,10 C145,10 158,14 162,24 L168,52 L185,52" fill="none" stroke="#173b7a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="55" cy="56" r="13" fill="none" stroke="#173b7a" stroke-width="4.5"/>
+        <circle cx="145" cy="56" r="13" fill="none" stroke="#173b7a" stroke-width="4.5"/>
+      </svg>
+    </div>
+    <div class="title">비밀번호 재설정</div>
+    <div class="sub">차카고 파트너</div>
+
+    <!-- 토큰 검증 중 -->
+    <div class="state loading" id="stateLoading">
+      <div class="state-text">링크를 확인하는 중입니다...</div>
+    </div>
+
+    <!-- 유효하지 않은 링크 -->
+    <div class="state" id="stateInvalid" style="display:none">
+      <div class="state-icon">⚠️</div>
+      <div class="state-title">유효하지 않은 링크</div>
+      <div class="state-text" id="invalidMsg"></div>
+    </div>
+
+    <!-- 재설정 완료 -->
+    <div class="state" id="stateDone" style="display:none">
+      <div class="state-icon">✅</div>
+      <div class="state-title">비밀번호가 변경되었습니다</div>
+      <div class="state-text">새 비밀번호로 파트너 페이지에 로그인하실 수 있습니다.</div>
+    </div>
+
+    <!-- 재설정 폼 -->
+    <div id="resetForm">
+      <div class="field">
+        <label>대상 계정</label>
+        <input type="text" id="emailDisplay" readonly style="background:#F0F2F5;">
+      </div>
+      <div class="field">
+        <label>새 비밀번호</label>
+        <input type="password" id="newPw" placeholder="새 비밀번호 (4자 이상)">
+      </div>
+      <div class="field">
+        <label>새 비밀번호 확인</label>
+        <input type="password" id="newPw2" placeholder="한 번 더 입력">
+      </div>
+      <button class="btn" id="submitBtn" onclick="doReset()">비밀번호 변경</button>
+      <div class="msg" id="msg"></div>
+    </div>
+  </div>
+
+<script>
+  const API='https://script.google.com/macros/s/AKfycbxTxOojQnjK1wbaqAbHl_hGB1_08PiQroJ-fnvPQna0O2lbHR3EY-vLlGamrxZ3qUm_/exec';
+  let _token='', _email='';
+
+  function jsonp(params,cb){
+    const cbName='_jp_'+Math.random().toString(36).slice(2);
+    window[cbName]=function(d){cb(d);delete window[cbName];s.remove();};
+    const qs=Object.keys(params).map(k=>k+'='+encodeURIComponent(params[k])).join('&');
+    const s=document.createElement('script');
+    s.src=API+'?'+qs+'&callback='+cbName;
+    s.onerror=function(){cb({success:false,message:'네트워크 오류'});delete window[cbName];s.remove();};
+    document.body.appendChild(s);
+  }
+
+  // URL에서 토큰 추출
+  function getToken(){
+    const p=new URLSearchParams(location.search);
+    return p.get('token')||'';
+  }
+
+  function showState(id){
+    ['stateLoading','stateInvalid','stateDone'].forEach(s=>document.getElementById(s).style.display='none');
+    document.getElementById('resetForm').style.display='none';
+    if(id==='form') document.getElementById('resetForm').style.display='block';
+    else document.getElementById(id).style.display='block';
+  }
+
+  // 페이지 로드 시 토큰 검증
+  function init(){
+    _token=getToken();
+    if(!_token){
+      showState('stateInvalid');
+      document.getElementById('invalidMsg').textContent='링크에 토큰이 없습니다. 메일의 링크를 다시 확인해 주세요.';
+      return;
+    }
+    jsonp({action:'verifyPartnerResetToken',token:_token},function(d){
+      if(d.success){
+        _email=d.email;
+        document.getElementById('emailDisplay').value=_email;
+        showState('form');
+        setTimeout(()=>document.getElementById('newPw').focus(),100);
+      }else{
+        showState('stateInvalid');
+        document.getElementById('invalidMsg').textContent=d.message||'유효하지 않거나 만료된 링크입니다.';
+      }
+    });
+  }
+
+  function doReset(){
+    const pw=document.getElementById('newPw').value.trim();
+    const pw2=document.getElementById('newPw2').value.trim();
+    const msg=document.getElementById('msg');
+    const btn=document.getElementById('submitBtn');
+    if(pw.length<4){msg.className='msg err';msg.textContent='비밀번호는 4자 이상 입력해 주세요';return;}
+    if(pw!==pw2){msg.className='msg err';msg.textContent='비밀번호가 일치하지 않습니다';return;}
+    btn.disabled=true;btn.textContent='변경 중...';msg.textContent='';
+    jsonp({action:'resetPartnerPassword',token:_token,newPassword:pw},function(d){
+      btn.disabled=false;btn.textContent='비밀번호 변경';
+      if(d.success){
+        showState('stateDone');
+      }else{
+        msg.className='msg err';
+        msg.textContent=d.message||'변경에 실패했습니다';
+        // 토큰 만료/사용됨이면 폼 숨김
+        if(/만료|사용/.test(d.message||'')){
+          setTimeout(()=>{showState('stateInvalid');document.getElementById('invalidMsg').textContent=d.message;},2000);
+        }
+      }
+    });
+  }
+  document.getElementById('newPw2').addEventListener('keydown',e=>{if(e.key==='Enter')doReset();});
+
+  init();
+</script>
+</body>
+</html>
